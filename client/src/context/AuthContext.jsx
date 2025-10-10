@@ -37,10 +37,35 @@ const registeruser = async (userData) => {
     }
 };
 
+const loginuser = async (userData) => {
+    try {
+        const response = await axios.post(API_URL + 'login', userData);
+        if (response.data) {
+            localStorage.setItem("token", response.data.token);
+            setToken(response.data.token);
+            setUser(response.data);
+        }
+        return response.data;
+    }
+    catch (error) {
+        console.error("Login error:", error.response.data);
+        throw error.response.data;
+}
+};
+
+// Logout user
+const logout = () => {
+    localStorage.removeItem("token");
+    setToken(null);
+    setUser(null);
+};
+
 const value = {
     user,
     token,
     registeruser,
+    loginuser,
+    logout,
     loading
 };
 

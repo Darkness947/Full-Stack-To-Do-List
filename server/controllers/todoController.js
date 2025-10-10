@@ -1,64 +1,110 @@
 const Todo = require('../models/Todos');
+const mongoose = require('mongoose');
 
-// @desc Get user's todos
-// @route GET /api/todos
+// @desc    Get user's todos
+// @route   GET /api/todos
 const getTodos = async (req, res) => {
-    // Find todos for the authenticated user
-    const todos = await Todo.find({ user: req.user._id });
-    res.json(todos);
+  try {
+    const todos = await Todo.find({ user: req.user.id }).sort({ createdAt: -1 });
+    res.status(200).json(todos);
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error when fetching todos' });
+  }
 };
 
-// @desc Create a new todo
-// @route POST /api/todos
+// @desc    Create a new todo
+// @route   POST /api/todos
 const createTodo = async (req, res) => {
-    const { text } = req.body;
+  const { text } = req.body;
 
-    if (!text) {
-        return res.status(400).json({ message: 'Text is required' });
-    }
+  if (!text) {
+    return res.status(400).json({ message: 'Please add a text field' });
+  }
 
-    const todo = await Todo.create({ text, user: req.user.id });
+  try {
+    const todo = await Todo.create({
+      text,
+      user: req.user.id,
+    });
     res.status(201).json(todo);
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error when creating todo' });
+  }
 };
 
-// @desc Update a todo
-// @route PUT /api/todos/:id
+// @desc    Update a todo
+// @route   PUT /api/todos/:id
 const updateTodo = async (req, res) => {
-    const todo = await Todo.findById(req.params.id);
+  const { id } = req.params;
+
+  // 1. Validate the ID format first
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: `Invalid ID format: ${id}` });
+  }
+
+  try {
+    // 2. Find the todo first to ensure it exists and belongs to the user
+    const todo = await Todo.findById(id);
 
     if (!todo) {
-        return res.status(404).json({ message: 'Todo not found' });
+      return res.status(404).json({ message: 'Todo not found' });
     }
 
-    // Ensure the logged-in user matches the todo's user
     if (todo.user.toString() !== req.user.id) {
-        return res.status(401).json({ message: 'Not authorized' });
+      return res.status(401).json({ message: 'User not authorized' });
     }
 
-    // Update the isCompleted status
-    todo.isCompleted = req.body.isCompleted;
-    const updatedTodo = await todo.save();
+    // 3. Use the direct findByIdAndUpdate method for a reliable update
+    //    The { new: true } option ensures it returns the updated document
+    const updatedTodo = await Todo.findByIdAndUpdate(
+      id,
+      { isCompleted: !todo.isCompleted }, // Toggle the status
+      { new: true }
+    );
 
-    res.json(updatedTodo);
+    res.status(200).json(updatedTodo);
+
+  } catch (error) {
+    console.error('Update Controller Error:', error);
+    res.status(500).json({ message: 'Server Error when updating todo' });
+  }
 };
 
-// @desc Delete a todo
-// @route DELETE /api/todos/:id
+
+// @desc    Delete a todo
+// @route   DELETE /api/todos/:id
 const deleteTodo = async (req, res) => {
-    const todo = await Todo.findById(req.params.id);
+  const { id } = req.params;
+
+  // --- FIX 2: Check if the ID is a valid MongoDB ObjectId format ---
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: `Invalid ID format: ${id}` });
+  }
+
+  try {
+    const todo = await Todo.findById(id);
 
     if (!todo) {
-        return res.status(404).json({ message: 'Todo not found' });
+      return res.status(404).json({ message: 'Todo not found' });
     }
 
-    // Ensure the logged-in user matches the todo's user
+    // Check if the todo belongs to the user trying to delete it
     if (todo.user.toString() !== req.user.id) {
-        return res.status(401).json({ message: 'Not authorized' });
+      return res.status(401).json({ message: 'User not authorized' });
     }
 
-    await todo.remove();
+    await todo.deleteOne();
 
-    res.json({ id: req.params.id });  // Return the ID of the deleted todo
+    res.status(200).json({ id: id }); // Send back the ID of the deleted todo
+  } catch (error) {
+      res.status(500).json({ message: 'Server Error when deleting todo' });
+  }
 };
 
-module.exports = { getTodos, createTodo, updateTodo, deleteTodo };
+
+module.exports = {
+  getTodos,
+  createTodo,
+  updateTodo,
+  deleteTodo,
+};

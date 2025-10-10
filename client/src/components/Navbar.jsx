@@ -1,49 +1,52 @@
-import { Link } from "react-router-dom";
-import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { Navbar, Nav, Container, NavDropdown } from "react-bootstrap";
 
 function AppNavbar() {
-    const [isOpen, setIsOpen] = useState(false);
+    const { user, logout } = useAuth();
+    const navigate = useNavigate();
 
-    const toggleNavbar = () => {
-        setIsOpen(!isOpen);
+    const handleLogout = () => {
+        logout();
+        navigate('/login');
     };
+    
+    const authLinks = (
+    <>
+      <Nav.Link as={Link} to="/Todo">My Todos</Nav.Link>
+      <NavDropdown title={user?.username || 'Profile'} id="basic-nav-dropdown">
+        <NavDropdown.Item onClick={handleLogout}>
+          Logout
+        </NavDropdown.Item>
+      </NavDropdown>
+    </>
+  );
 
-    return (
-        <nav className="navbar navbar-expand-lg navbar-dark bg-dark px-4">
-            <div className="container-fluid">
-                <Link className="navbar-brand text-primary" to="/">To-Do-List</Link>
+  const guestLinks = (
+    <>
+      <Nav.Link as={Link} to="/login">Login</Nav.Link>
+      <Nav.Link as={Link} to="/register">Register</Nav.Link>
+    </>
+  );
 
-                <button 
-                    className="navbar-toggler" 
-                    type="button"
-                    onClick={toggleNavbar}
-                    aria-controls="navbarNav"
-                    aria-expanded={isOpen}
-                    aria-label="Toggle navigation"
-                >
-                    <span className="navbar-toggler-icon"></span>
-                </button>
-
-                <div className={`collapse navbar-collapse ${isOpen ? "show" : ""}`} id="navbarNav">
-                    <ul className="navbar-nav ms-auto">
-                        <li className="nav-item">
-                            <Link className="nav-link" to="/" onClick={() => setIsOpen(false)}>About</Link>
-                        </li>
-                        <li className="nav-item">
-                            <Link className="nav-link" to="/Contact" onClick={() => setIsOpen(false)}>Contact</Link>
-                        </li>
-                        <li className="nav-item">
-                            <Link className="nav-link" to="/Login" onClick={() => setIsOpen(false)}>Login</Link>
-                        </li>
-                        <li className="nav-item">
-                            <Link className="nav-link" to="/Register" onClick={() => setIsOpen(false)}>Register</Link>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </nav>
-    );
-}
+  return (
+    <Navbar bg="dark" variant="dark" expand="lg" className="mb-4">
+      <Container>
+        <Navbar.Brand as={Link} to="/">
+          📝 To-Do-List 
+        </Navbar.Brand>
+        <Navbar.Toggle aria-controls="basic-navbar-nav" />
+        <Navbar.Collapse id="basic-navbar-nav">
+          <Nav className="ms-auto">
+            <Nav.Link as={Link} to="/">Home</Nav.Link>
+            <Nav.Link as={Link} to="/Contact">Contact</Nav.Link>
+            {user ? authLinks : guestLinks}
+          </Nav>
+        </Navbar.Collapse>
+      </Container>
+    </Navbar>
+  );
+};
 
 
 export default AppNavbar;

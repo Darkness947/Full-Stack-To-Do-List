@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Container } from 'react-bootstrap';
 import AppNavbar from './components/Navbar';
 import Footer from './components/Footer';
+import PrivateRoute from './components/PrivateRoute';
 import Home from './pages/Home';
 import Contact from './pages/Contact';
 import Login from './pages/Login';
@@ -22,7 +23,9 @@ function App() {
               <Route path='/contact' element={<Contact />} />
               <Route path='/Login' element={<Login />} />
               <Route path='/Register' element={<Register />} />
-              <Route path='/Todo' element={<Todo />} />
+             <Route path='/Todo' element={<PrivateRoute />}>
+                <Route index element={<Todo />} />
+              </Route>
             </Routes>
           </Container>
         </main>
@@ -33,4 +36,4 @@ function App() {
   )
 }
 
-export default App
+export default App;
